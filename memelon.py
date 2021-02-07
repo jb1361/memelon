@@ -12,7 +12,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from imageai.Detection.Custom import CustomObjectDetection
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-import logging
 
 load_dotenv()
 app_scheduler = BlockingScheduler()
@@ -24,7 +23,7 @@ temp_path = os.path.join(execution_path, "temp")
 models_path = os.path.join(execution_path, "doge-training/doge-identification/models/")
 
 
-def check_if_image_contains_doge(image_path):
+def image_contains_doge(image_path):
     detector = CustomObjectDetection()
     detector.setModelTypeAsYOLOv3()
     detector.setModelPath(os.path.join(execution_path, os.path.join(models_path + "doge-detection.h5")))
@@ -33,70 +32,75 @@ def check_if_image_contains_doge(image_path):
     detections = detector.detectObjectsFromImage(input_image=image_path, minimum_percentage_probability=80,
                                                  output_image_path=image_path)
     if len(detections) != 0:
-        buy_doge()
+        pause_tweet_job()
+        add_buy_doge_job()
+        return True
+    return False
 
 
 def check_for_doge_in_tweet_text(tweet_text):
     tweet_text = tweet_text.lower()
     if any(substring in tweet_text for substring in doge_words):
-        print("Tweet talking about doge: ", tweet_text)
-        add_buy_doge_job()
         pause_tweet_job()
+        add_buy_doge_job()
         return True
     return False
 
 
 def check_for_new_tweet(auth_api):
-    elon = auth_api.get_user("elonmusk")
+    pause_tweet_job()
+    add_buy_doge_job()
+    # elon = auth_api.get_user("elonmusk")
+    #
+    # end_date = datetime.utcnow() - timedelta(minutes=1)
+    # for status in Cursor(auth_api.user_timeline, id=elon.id, exclude_replies=True, include_retweets=False).items():
+    #     if status.created_at < end_date:
+    #         return
+    #     if check_for_doge_in_tweet_text(status.text):
+    #         print("Tweet contains doge: ", status.text)
+    #         return
+    #     if hasattr(status, "entities"):
+    #         entities = status.entities
+    #         if "media" in entities:
+    #             media_arr = entities["media"]
+    #             for media in media_arr:
+    #                 if media["type"] == "photo":
+    #                     filename = media["media_url"].split('/')[-1]
+    #                     image_path = os.path.join(temp_path, filename)
+    #                     urllib.request.urlretrieve(media["media_url"], image_path)
+    #                     contains_doge = image_contains_doge(image_path)
+    #                     os.remove(image_path)
+    #                     if contains_doge:
+    #                         print("Tweet contains doge: ", status.text)
+    #                         return
 
-    end_date = datetime.utcnow() - timedelta(days=4)
-    for status in Cursor(auth_api.user_timeline, id=elon.id, exclude_replies=True, include_retweets=False).items():
-        if status.created_at < end_date:
-            break
-        if check_for_doge_in_tweet_text(status.text):
-            break
-        if hasattr(status, "entities"):
-            entities = status.entities
-            if "media" in entities:
-                media_arr = entities["media"]
-                for media in media_arr:
-                    if media["type"] == "photo":
-                        filename = media["media_url"].split('/')[-1]
-                        image_path = os.path.join(temp_path, filename)
-                        urllib.request.urlretrieve(media["media_url"], image_path)
-                        check_if_image_contains_doge(image_path)
-                        os.remove(image_path)
 
-
-def check_doge_for_increase(buy_price, rh):
+def sell_doge_after_increase(buy_price):
+    if not rh.authenticated:
+        rh.login()
     current_price = float(rh.get_crypto_quote("1ef78e1b-049b-4f12-90e5-555dcf2fe204")["mark_price"])
     difference = ((current_price - buy_price)/buy_price) * 100
 
     if float(difference) >= float(10):
-        print("selling doge for: ", current_price)
-        # rh.place_market_crypto_sell_order("1ef78e1b-049b-4f12-90e5-555dcf2fe204", 1.00)
+        print("selling doge for: ", current_price, " and profiting ", str(current_price - buy_price), " per DogeCoin")
+        rh.place_market_crypto_sell_order("1ef78e1b-049b-4f12-90e5-555dcf2fe204", 1.00)
         app_scheduler.remove_job("sell_doge_on_increase")
-        print(app_scheduler.get_jobs())
         resume_tweet_job()
-        print(app_scheduler.get_jobs())
 
 
 def buy_doge():
-    print("Attempting to buy DogeCoin")
-    # request = rh.place_market_crypto_buy_order("1ef78e1b-049b-4f12-90e5-555dcf2fe204", 1.00)
-    # if request.status_code == 200:
-    #     print("Bought DogeCoin")
-    # else:
-    #     print("Failed to buy DogeCoin: ", request.message)
+    if not rh.authenticated:
+        rh.login()
+    request = rh.place_market_crypto_buy_order("1ef78e1b-049b-4f12-90e5-555dcf2fe204", 1.00)
+    print(request)
+    if request.status_code == 201:
+        print("Bought DogeCoin at: ", request["price"])
+    else:
+        print("Failed to buy DogeCoin: ", request.message)
     doge_price = float(rh.get_crypto_quote("1ef78e1b-049b-4f12-90e5-555dcf2fe204")["mark_price"])
     print("First: ", app_scheduler.get_jobs())
-    pause_tweet_job()
-
-
-def login_to_robinhood():
-    global rh
-    rh = Robinhood(username=os.getenv("RH_USERNAME"), password=os.getenv("RH_PASSWORD"))
-    rh.login()
+    add_sell_doge_job(doge_price)
+    print("Second: ", app_scheduler.get_jobs())
 
 
 def add_buy_doge_job():
@@ -104,15 +108,16 @@ def add_buy_doge_job():
 
 
 def add_sell_doge_job(doge_price):
-    app_scheduler.add_job(check_doge_for_increase, IntervalTrigger(seconds=3), args=[doge_price, rh],
-                          id="sell_doge_on_increase")
+    app_scheduler.add_job(sell_doge_after_increase, IntervalTrigger(seconds=int(os.getenv("DOGE_PRICE_PULL_INTERVAL"))),
+                          args=[doge_price], id="sell_doge_on_increase")
 
 
 def add_tweet_job():
     auth = OAuthHandler(os.getenv("TWITTER_CONSUMER_KEY"), os.getenv("TWITTER_CONSUMER_SECRET"))
     auth.set_access_token(os.getenv("TWITTER_ACCESS_TOKEN"), os.getenv("TWITTER_ACCESS_TOKEN_SECRET"))
     auth_api = API(auth)
-    app_scheduler.add_job(check_for_new_tweet, IntervalTrigger(seconds=20), args=[auth_api], id="check_tweets")
+    app_scheduler.add_job(check_for_new_tweet, IntervalTrigger(seconds=int(os.getenv("TWEET_PULL_INTERVAL"))),
+                          args=[auth_api], id="check_tweets")
 
 
 def pause_tweet_job():
@@ -128,10 +133,9 @@ def main():
         os.makedirs(temp_path)
 
     add_tweet_job()
-    print("initial: ", app_scheduler.get_jobs())
+    print("Starting Memelon")
     try:
         app_scheduler.start()
-        print("test: ", app_scheduler.get_jobs())
     except (KeyboardInterrupt, SystemExit):
         app_scheduler.shutdown()
         pass
