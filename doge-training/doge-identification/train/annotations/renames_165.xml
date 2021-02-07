@@ -1,0 +1,26 @@
+<annotation>
+	<folder>dogestouse</folder>
+	<filename>renames_165.jpg</filename>
+	<path>C:\Users\Justin\Downloads\dogestouse\renames_165.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>474</width>
+		<height>613</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>doge</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>6</xmin>
+			<ymin>145</ymin>
+			<xmax>294</xmax>
+			<ymax>444</ymax>
+		</bndbox>
+	</object>
+</annotation>

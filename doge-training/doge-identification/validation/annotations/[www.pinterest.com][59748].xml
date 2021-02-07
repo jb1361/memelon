@@ -1,0 +1,26 @@
+<annotation>
+	<folder>onestouse</folder>
+	<filename>[www.pinterest.com][59748].jpg</filename>
+	<path>C:\Users\Justin\Downloads\onestouse\[www.pinterest.com][59748].jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>236</width>
+		<height>339</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>doge</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>18</xmin>
+			<ymin>107</ymin>
+			<xmax>215</xmax>
+			<ymax>320</ymax>
+		</bndbox>
+	</object>
+</annotation>

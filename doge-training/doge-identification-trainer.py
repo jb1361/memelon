@@ -20,11 +20,14 @@ execution_path = os.getcwd()
 data_path = os.path.join(execution_path, "doge-identification/")
 models_path = os.path.join(execution_path, "doge-identification/models/")
 
-
+list_of_files = glob.glob(models_path + "*.h5")
+newest_model = max(list_of_files, key=os.path.getctime)
+print("Newest Model: ", newest_model)
 
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 trainer = DetectionModelTrainer()
 trainer.setModelTypeAsYOLOv3()
 trainer.setDataDirectory(data_directory=data_path)
-trainer.setTrainConfig(object_names_array=["doge"], batch_size=16, num_experiments=10)
+trainer.setTrainConfig(object_names_array=["doge"], batch_size=16, num_experiments=10,
+                       train_from_pretrained_model=newest_model)
 trainer.trainModel()

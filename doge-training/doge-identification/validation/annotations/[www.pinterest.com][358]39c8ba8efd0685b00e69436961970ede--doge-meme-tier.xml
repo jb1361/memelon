@@ -1,0 +1,26 @@
+<annotation>
+	<folder>onestouse</folder>
+	<filename>[www.pinterest.com][358]39c8ba8efd0685b00e69436961970ede--doge-meme-tier.jpg</filename>
+	<path>C:\Users\Justin\Downloads\onestouse\[www.pinterest.com][358]39c8ba8efd0685b00e69436961970ede--doge-meme-tier.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>474</width>
+		<height>474</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>doge</name>
+		<pose>Unspecified</pose>
+		<truncated>1</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>1</xmin>
+			<ymin>119</ymin>
+			<xmax>220</xmax>
+			<ymax>368</ymax>
+		</bndbox>
+	</object>
+</annotation>

@@ -1,0 +1,26 @@
+<annotation>
+	<folder>raw-images</folder>
+	<filename>resized_191.jpg</filename>
+	<path>E:\memelon\doge-training\doge-identification\raw-images\resized_191.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>600</width>
+		<height>600</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>doge</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>31</xmin>
+			<ymin>26</ymin>
+			<xmax>552</xmax>
+			<ymax>528</ymax>
+		</bndbox>
+	</object>
+</annotation>

@@ -1,0 +1,26 @@
+<annotation>
+	<folder>onestouse</folder>
+	<filename>[www.pinterest.com][372]0298fa4e7f8b0495169b2e964f06d7f2--doge-meme-doge-dog.jpg</filename>
+	<path>C:\Users\Justin\Downloads\onestouse\[www.pinterest.com][372]0298fa4e7f8b0495169b2e964f06d7f2--doge-meme-doge-dog.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>474</width>
+		<height>355</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>doge</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>139</xmin>
+			<ymin>13</ymin>
+			<xmax>334</xmax>
+			<ymax>194</ymax>
+		</bndbox>
+	</object>
+</annotation>
