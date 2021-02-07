@@ -30,7 +30,7 @@ for x in glob.glob(testing_path + 'images/*.jpg', recursive=True):
     head, tail = os.path.split(x)
     detections = detector.detectObjectsFromImage(input_image=x,
                                                  output_image_path=testing_path + "results/detected-" + tail,
-                                                 minimum_percentage_probability=20,
+                                                 minimum_percentage_probability=80,
                                                  display_percentage_probability=True,
                                                  display_object_name=True)
     if len(detections) == 0:

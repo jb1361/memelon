@@ -6,7 +6,7 @@ execution_path = os.getcwd()
 models_path = os.path.join(execution_path, "doge-identification/models/")
 data_path = os.path.join(execution_path, "doge-identification/")
 # This will force tensorflow to run on the cpu
-# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 list_of_files = glob.glob(models_path + "*.h5")
 latest_model_path = max(list_of_files, key=os.path.getctime)
