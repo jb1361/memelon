@@ -1,4 +1,3 @@
-from time import sleep
 from pyrh import Robinhood
 from dotenv import load_dotenv
 from tweepy import OAuthHandler
@@ -48,31 +47,29 @@ def check_for_doge_in_tweet_text(tweet_text):
 
 
 def check_for_new_tweet(auth_api):
-    pause_tweet_job()
-    add_buy_doge_job()
-    # elon = auth_api.get_user("elonmusk")
-    #
-    # end_date = datetime.utcnow() - timedelta(minutes=1)
-    # for status in Cursor(auth_api.user_timeline, id=elon.id, exclude_replies=True, include_retweets=False).items():
-    #     if status.created_at < end_date:
-    #         return
-    #     if check_for_doge_in_tweet_text(status.text):
-    #         print("Tweet contains doge: ", status.text)
-    #         return
-    #     if hasattr(status, "entities"):
-    #         entities = status.entities
-    #         if "media" in entities:
-    #             media_arr = entities["media"]
-    #             for media in media_arr:
-    #                 if media["type"] == "photo":
-    #                     filename = media["media_url"].split('/')[-1]
-    #                     image_path = os.path.join(temp_path, filename)
-    #                     urllib.request.urlretrieve(media["media_url"], image_path)
-    #                     contains_doge = image_contains_doge(image_path)
-    #                     os.remove(image_path)
-    #                     if contains_doge:
-    #                         print("Tweet contains doge: ", status.text)
-    #                         return
+    elon = auth_api.get_user("elonmusk")
+
+    end_date = datetime.utcnow() - timedelta(minutes=1)
+    for status in Cursor(auth_api.user_timeline, id=elon.id, exclude_replies=True, include_retweets=False).items():
+        if status.created_at < end_date:
+            return
+        if check_for_doge_in_tweet_text(status.text):
+            print("Tweet contains doge: ", status.text)
+            return
+        if hasattr(status, "entities"):
+            entities = status.entities
+            if "media" in entities:
+                media_arr = entities["media"]
+                for media in media_arr:
+                    if media["type"] == "photo":
+                        filename = media["media_url"].split('/')[-1]
+                        image_path = os.path.join(temp_path, filename)
+                        urllib.request.urlretrieve(media["media_url"], image_path)
+                        contains_doge = image_contains_doge(image_path)
+                        os.remove(image_path)
+                        if contains_doge:
+                            print("Tweet contains doge: ", status.text)
+                            return
 
 
 def sell_doge_after_increase(buy_price):
@@ -88,19 +85,36 @@ def sell_doge_after_increase(buy_price):
         resume_tweet_job()
 
 
+# Robinhoods order date seems to be an hour off so i am just checking the order time
+def check_doge_buy_order(order_id, order_time):
+    if not rh.authenticated:
+        rh.login()
+    order_status = rh.get_crypto_orders(order_id)[0]
+    if order_status["state"] == "filled":
+        print("Bought DogeCoin at: ", order_status["price"])
+        app_scheduler.remove_job("check_doge_order")
+        add_sell_doge_job(float(order_status["price"]))
+
+    end_date = datetime.utcnow() - timedelta(minutes=10)
+    if order_time < end_date:
+        cancel_request = rh.cancel_crypto_order(order_status["cancel_url"])
+        if not cancel_request:
+            print("Cancelled Doge order as it was not filled in time")
+            app_scheduler.remove_job("check_doge_order")
+            resume_tweet_job()
+
+
 def buy_doge():
     if not rh.authenticated:
         rh.login()
     request = rh.place_market_crypto_buy_order("1ef78e1b-049b-4f12-90e5-555dcf2fe204", 1.00)
-    print(request)
+    res = request.json()
     if request.status_code == 201:
-        print("Bought DogeCoin at: ", request["price"])
+        print("Attempting to buy DogeCoin at: ", res["price"])
+        add_check_doge_order_job(res["id"])
     else:
-        print("Failed to buy DogeCoin: ", request.message)
-    doge_price = float(rh.get_crypto_quote("1ef78e1b-049b-4f12-90e5-555dcf2fe204")["mark_price"])
-    print("First: ", app_scheduler.get_jobs())
-    add_sell_doge_job(doge_price)
-    print("Second: ", app_scheduler.get_jobs())
+        print("Failed to place DogeCoin Buy Order: ", res)
+        resume_tweet_job()
 
 
 def add_buy_doge_job():
@@ -108,8 +122,14 @@ def add_buy_doge_job():
 
 
 def add_sell_doge_job(doge_price):
+    print("Added sell order job... waiting for price to increase.")
     app_scheduler.add_job(sell_doge_after_increase, IntervalTrigger(seconds=int(os.getenv("DOGE_PRICE_PULL_INTERVAL"))),
                           args=[doge_price], id="sell_doge_on_increase")
+
+
+def add_check_doge_order_job(order_id):
+    app_scheduler.add_job(check_doge_buy_order, IntervalTrigger(seconds=10), args=[order_id, datetime.now()],
+                          id="check_doge_order")
 
 
 def add_tweet_job():
