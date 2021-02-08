@@ -16,7 +16,7 @@ load_dotenv()
 app_scheduler = BlockingScheduler()
 rh = Robinhood(username=os.getenv("RH_USERNAME"), password=os.getenv("RH_PASSWORD"))
 
-doge_words = ["doge", "such wow", "much wow", "dogecoin"]
+doge_words = ["doge", "such wow", "much wow", "dogecoin", "Ðogecoin", "Ð"]
 execution_path = os.getcwd()
 temp_path = os.path.join(execution_path, "temp")
 models_path = os.path.join(execution_path, "doge-training/doge-identification/models/")
@@ -72,7 +72,7 @@ def check_for_new_tweet(auth_api):
                             return
 
 
-def sell_doge_after_increase(buy_price):
+def sell_doge_after_increase(buy_price, starting_time):
     if not rh.authenticated:
         rh.login()
     current_price = float(rh.get_crypto_quote("1ef78e1b-049b-4f12-90e5-555dcf2fe204")["mark_price"])
@@ -80,7 +80,12 @@ def sell_doge_after_increase(buy_price):
 
     if float(difference) >= float(10):
         print("selling doge for: ", current_price, " and profiting ", str(current_price - buy_price), " per DogeCoin")
-        rh.place_market_crypto_sell_order("1ef78e1b-049b-4f12-90e5-555dcf2fe204", 1.00)
+        rh.place_market_crypto_sell_order("1ef78e1b-049b-4f12-90e5-555dcf2fe204", float(os.getenv("AMOUNT_TO_SPEND")))
+        app_scheduler.remove_job("sell_doge_on_increase")
+        resume_tweet_job()
+    end_date = datetime.utcnow() - timedelta(minutes=60)
+    if starting_time < end_date:
+        print("Doge did not increase enough, cancelling sell order and going back to watching tweets")
         app_scheduler.remove_job("sell_doge_on_increase")
         resume_tweet_job()
 
@@ -107,7 +112,7 @@ def check_doge_buy_order(order_id, order_time):
 def buy_doge():
     if not rh.authenticated:
         rh.login()
-    request = rh.place_market_crypto_buy_order("1ef78e1b-049b-4f12-90e5-555dcf2fe204", 1.00)
+    request = rh.place_market_crypto_buy_order("1ef78e1b-049b-4f12-90e5-555dcf2fe204", float(os.getenv("AMOUNT_TO_SPEND")))
     res = request.json()
     if request.status_code == 201:
         print("Attempting to buy DogeCoin at: ", res["price"])
@@ -124,7 +129,7 @@ def add_buy_doge_job():
 def add_sell_doge_job(doge_price):
     print("Added sell order job... waiting for price to increase.")
     app_scheduler.add_job(sell_doge_after_increase, IntervalTrigger(seconds=int(os.getenv("DOGE_PRICE_PULL_INTERVAL"))),
-                          args=[doge_price], id="sell_doge_on_increase")
+                          args=[doge_price, datetime.now()], id="sell_doge_on_increase")
 
 
 def add_check_doge_order_job(order_id):
@@ -136,6 +141,7 @@ def add_tweet_job():
     auth = OAuthHandler(os.getenv("TWITTER_CONSUMER_KEY"), os.getenv("TWITTER_CONSUMER_SECRET"))
     auth.set_access_token(os.getenv("TWITTER_ACCESS_TOKEN"), os.getenv("TWITTER_ACCESS_TOKEN_SECRET"))
     auth_api = API(auth)
+    print("Waiting for elon to tweet...")
     app_scheduler.add_job(check_for_new_tweet, IntervalTrigger(seconds=int(os.getenv("TWEET_PULL_INTERVAL"))),
                           args=[auth_api], id="check_tweets")
 
@@ -145,6 +151,7 @@ def pause_tweet_job():
 
 
 def resume_tweet_job():
+    print("Waiting for elon to tweet...")
     app_scheduler.resume_job("check_tweets")
 
 
